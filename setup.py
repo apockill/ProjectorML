@@ -9,6 +9,6 @@ setup(
     version='0.1',
     description='This is a fun side-project for messing around with projection mapping',
     packages=['hardware'],
-    install_requires=["screeninfo"],
+    install_requires=["screeninfo", 'pyserial'],
     zip_safe=False
 )

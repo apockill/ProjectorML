@@ -1,0 +1,23 @@
+{
+    "0":  {"label": "background",   "color": [0,0,0]},
+    "1":  {"label": "aeroplane",    "color": [0,0,0]},
+    "2":  {"label": "bicycle",      "color": [0,0,0]},
+    "3":  {"label": "bird",         "color": [0,0,0]},
+    "4":  {"label": "boat",         "color": [0,0,0]},
+    "5":  {"label": "bottle",       "color": [255,0,0]},
+    "6":  {"label": "bus",          "color": [0,0,0]},
+    "7":  {"label": "car",          "color": [0,0,0]},
+    "8":  {"label": "cat",          "color": [0,0,0]},
+    "9":  {"label": "chair",        "color": [0,255,0]},
+    "10": {"label": "cow",          "color": [0,0,0]},
+    "11": {"label": "dining_table", "color": [0,0,0]},
+    "12": {"label": "dog",          "color": [0,0,0]},
+    "13": {"label": "horse",        "color": [0,0,0]},
+    "14": {"label": "motorbike",    "color": [0,0,0]},
+    "15": {"label": "person",       "color": [255,255,255]},
+    "16": {"label": "potted_plant", "color": [0,0,0]},
+    "17": {"label": "sheep",        "color": [0,0,0]},
+    "18": {"label": "sofa",         "color": [0,0,0]},
+    "19": {"label": "train",        "color": [0,0,0]},
+    "20": {"label": "tv/m",         "color": [0,0,0]}
+}

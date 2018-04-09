@@ -8,8 +8,6 @@ import screeninfo
 from hardware.surface import Surface
 
 
-
-
 class Projector:
     # Shift the window so that the borders are not projected.
     # TODO (Alex): Find something that can render fullscreen-borderless
@@ -42,6 +40,10 @@ class Projector:
         """Draws a frame such that from the cameras perspective it's unwarped
         :param frame: A cv2 BGR frame
         :param wait: If true, it will render with cv2.waitKey(1) """
+        draw_frame = self.get_warped_frame(frame)
+        self.render(draw_frame, wait=wait)
+
+    def get_warped_frame(self, frame):
         # Create an empty frame to draw all the warped surfaces onto
         dims = (self.monitor.width, self.monitor.height)
 
@@ -55,7 +57,7 @@ class Projector:
         for surface in self.surfaces:
             warped = surface.warp_to_camera(frame, dims)
             draw_frame = cv2.bitwise_or(draw_frame, warped)
-        self.render(draw_frame, wait=wait)
+        return draw_frame
 
     @property
     def empty_frame(self):
