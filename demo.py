@@ -31,7 +31,6 @@ class Demo:
 
     def run(self):
         self.cam.show()
-        count = 0
         last_tstamp = 0
 
         while cv2.waitKey(10) != ord('q'):
@@ -41,40 +40,13 @@ class Demo:
                 print("Skipping")
                 continue
             last_tstamp = tstamp
-            count += 1
 
-            canvas = np.zeros_like(frame)
-            self.motion_detected(frame)
-            # self.draw_predictions(frame, canvas)
+            canvas = self.run_person_segmentation(frame)
 
-            # Only do segmentations every other frame
-            if count % 2 == 0:
-                canvas = self.run_person_segmentation(frame)
-
-
-                cv2.imshow("Labels", canvas)
-                self.prj.render_to_camera(canvas, wait=False)
-                self._cv2_sleep(20)
-
-            else:
-                self.prj.render_to_camera(canvas, wait=True)
-
-            self._last_frame = frame
+            cv2.imshow("Labels", canvas)
+            self.prj.render_to_camera(canvas, wait=False)
 
         self.cam.close()
-
-    def motion_detected(self, frame):
-        """Returns True if motion has been detected, and thus inference should be run """
-        for surface in self.prj.surfaces:
-            last_surface = surface.mask_frame(self._last_frame)
-            cur_surface = surface.mask_frame(frame)
-            frame_delta = cv2.absdiff(cur_surface, last_surface)
-            thresh = cv2.threshold(frame_delta, 70, 255, cv2.THRESH_BINARY)[1]
-            motion = np.count_nonzero(thresh)
-            if motion > self.MOTION_THRESH:
-                print("Motio detected: ", motion)
-                return True
-        return False
 
     def run_person_segmentation(self, frame):
         # Draw segmentations
@@ -109,9 +81,6 @@ class Demo:
             draw_utils.draw_label(canvas_frame, pred.rect, pred.name)
         return canvas_frame
 
-    def _cv2_sleep(self, ms):
-        for i in range(ms):
-            cv2.waitKey(1)
 
 
 def main(args):
