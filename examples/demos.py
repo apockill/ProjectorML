@@ -16,7 +16,7 @@ def draw_edged(cam, projector):
     cam.show()
 
     while cv2.waitKey(1) != ord('q'):
-        frame = cam.read()
+        _, frame = cam.read()
 
         # ret, thresh = cv2.threshold(frame, 200, 255, cv2.THRESH_TOZERO_INV)
         # # thresh = cv2.inRange(frame, (0, 0, 0), (100, 100, 100))
@@ -37,13 +37,13 @@ def draw_edged(cam, projector):
 def draw_edged_snapshot(cam, projector):
     cam.show()
     while cv2.waitKey(1) != ord('q'):
-        frame = cam.read()
+        _, frame = cam.read()
         white_frame = np.full(frame.shape, 255, dtype=np.uint8)
         projector.render_to_camera(white_frame)
 
         wait_till_key(' ')
 
-        frame = cam.read()
+        _, frame = cam.read()
 
         edges = cv2.Canny(frame, 100, 200)
         print(edges)
@@ -57,13 +57,13 @@ def draw_inverted(cam, projector):
     cam.show()
     while cv2.waitKey(1) != ord('q'):
 
-        frame = cam.read()
+        _, frame = cam.read()
         white_frame = np.full(frame.shape, 0, dtype=np.uint8)
         projector.render_to_camera(white_frame)
 
         wait_till_key(' ')
 
-        frame = cam.read()
+        _, frame = cam.read()
         inverted = 255 - frame
         projector.render_to_camera(inverted)
 
@@ -83,11 +83,10 @@ def draw_pointer(cam, projector, background_color=(255, 255, 255)):
         if event == cv2.EVENT_LBUTTONUP:
             mouse_clicked = False
 
-
     cv2.setMouseCallback(cam.window_name, mouse_move)
 
     while cv2.waitKey(1) != ord('q'):
-        frame = cam.read()
+        _, frame = cam.read()
         if frame is None: break
 
         proj = np.full_like(projector.empty_frame, background_color)
@@ -96,3 +95,6 @@ def draw_pointer(cam, projector, background_color=(255, 255, 255)):
                               (mouse_x, mouse_y), 10,
                               (0, 255, 0), thickness=-1)
         projector.render_to_camera(proj)
+
+
+

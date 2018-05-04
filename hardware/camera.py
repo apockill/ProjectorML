@@ -1,3 +1,5 @@
+from time import time
+
 import cv2
 from threading import Thread
 
@@ -21,6 +23,7 @@ class Camera(Thread):
         ret, frame = self.cap.read()
         if not ret: raise IOError("Unable to get frames from camera!")
         self.latest_frame = frame
+        self.latest_tstamp = time()
 
         # Start the main camera loop
         self.start()
@@ -32,6 +35,7 @@ class Camera(Thread):
             if not ret:
                 print("Camera stopped returning frames! Ending camera thread.")
                 break
+            self.latest_tstamp = time()
             self.latest_frame = frame
 
             if self.record_to is not None:
@@ -47,9 +51,9 @@ class Camera(Thread):
                 cv2.imshow(self.window_name, frame)
 
     def read(self):
-        """Return the latest frame from the camera"""
+        """Return the latest frame and timestamp from the camera"""
         latest = self.latest_frame
-        return latest.copy()
+        return self.latest_tstamp, latest.copy()
 
     def show(self):
         """Show the current camera view to screen """

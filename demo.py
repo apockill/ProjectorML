@@ -12,8 +12,9 @@ from utils import draw_utils
 
 
 class Demo:
-    CHECK_FOR_HUMANS = 5  # Check for humans every X frames
+    CHECK_FOR_HUMANS = 1  # Check for humans every X frames
     HUMAN_PIXEL_THRESH = 5000  # Number of human pixels to count as an 'alarm'
+    MOTION_THRESH = 1000
 
     def __init__(self, camera, projector, segmentation_brain, detector_brain,
                  device):
@@ -24,39 +25,82 @@ class Demo:
         self.detector = detector_brain
         self.device = device
 
+        # State tracking
+        self.is_person = False  # Is a person currently present
+        self._last_frame = self.cam.read()[1]
+
     def run(self):
         self.cam.show()
         count = 0
+        last_tstamp = 0
 
         while cv2.waitKey(10) != ord('q'):
-            # Get a frame
-            frame = self.cam.read()
+            # Get a frame and update state variables
+            tstamp, frame = self.cam.read()
+            if tstamp == last_tstamp:
+                print("Skipping")
+                continue
+            last_tstamp = tstamp
             count += 1
 
-            canvas = self.prj.empty_frame
-            canvas = self.draw_segmentations(frame)
+            canvas = np.zeros_like(frame)
+            self.motion_detected(frame)
+            # self.draw_predictions(frame, canvas)
 
-            # Send a signal if there are humans in the frame
-            if count % self.CHECK_FOR_HUMANS == 0:
-                warped = self.prj.get_warped_frame(canvas)
-                human_pixels = (warped == [255, 255, 255]).sum()
-                print("Human pixels", human_pixels)
-                is_person = human_pixels > self.HUMAN_PIXEL_THRESH
-                self.device.set_person_status(is_person)
+            # Only do segmentations every other frame
+            if count % 2 == 0:
+                canvas = self.run_person_segmentation(frame)
 
-            self.draw_predictions(frame, canvas)
-            cv2.imshow("Labels", canvas)
-            self.prj.render_to_camera(canvas, wait=False)
+
+                cv2.imshow("Labels", canvas)
+                self.prj.render_to_camera(canvas, wait=False)
+                self._cv2_sleep(20)
+
+            else:
+                self.prj.render_to_camera(canvas, wait=True)
+
+            self._last_frame = frame
 
         self.cam.close()
 
-    def draw_segmentations(self, detection_frame):
+    def motion_detected(self, frame):
+        """Returns True if motion has been detected, and thus inference should be run """
+        for surface in self.prj.surfaces:
+            last_surface = surface.mask_frame(self._last_frame)
+            cur_surface = surface.mask_frame(frame)
+            frame_delta = cv2.absdiff(cur_surface, last_surface)
+            thresh = cv2.threshold(frame_delta, 70, 255, cv2.THRESH_BINARY)[1]
+            motion = np.count_nonzero(thresh)
+            if motion > self.MOTION_THRESH:
+                print("Motio detected: ", motion)
+                return True
+        return False
+
+    def run_person_segmentation(self, frame):
+        # Draw segmentations
         if self.segmenter is None: return
-        segmentation = self.segmenter.predict(detection_frame)
-        return segmentation.colored
+        if not self.is_person and not self.motion_detected(frame):
+            print("Skipping segmentation inference, no motion!")
+            return np.zeros_like(frame)
+
+        segmentation = self.segmenter.predict(frame)
+        canvas = segmentation.colored
+
+        # Send a signal if there are humans in the frame
+        warped = self.prj.get_warped_frame(canvas)
+        human_pixels = (warped == [255, 255, 255]).sum()
+        print("Human pixels", human_pixels)
+        self.is_person = human_pixels > self.HUMAN_PIXEL_THRESH
+        self.alert_robot()
+
+        return canvas
+
+    def alert_robot(self):
+        if self.device:
+            self.device.set_person_status(self.is_person)
 
     def draw_predictions(self, detection_frame, canvas_frame):
-        if self.detector is None: return
+        if self.detector is None: return canvas_frame
 
         det_preds = self.detector.predict([detection_frame])[0]
 
@@ -65,24 +109,27 @@ class Demo:
             draw_utils.draw_label(canvas_frame, pred.rect, pred.name)
         return canvas_frame
 
+    def _cv2_sleep(self, ms):
+        for i in range(ms):
+            cv2.waitKey(1)
+
 
 def main(args):
-    cam = Camera(0)
-    projector = Projector(3)
+    cam = Camera(1)
+    projector = Projector(1)
     projector.load_configuration(args.calibration_path)
 
     segmenter_brain = DeeplabImageSegmenter.from_path(args.segment_path,
                                                       args.segment_map)
 
-    detector_brain = ObjectDetector.from_path(args.detector_path,
-                                              args.detector_labels)
+    detector_brain = None  # ObjectDetector.from_path(args.detector_path, args.detector_labels)
 
     device = Device(args.device_port)
 
     demo = Demo(camera=cam,
                 projector=projector,
                 segmentation_brain=segmenter_brain,
-                detector_brain=None,
+                detector_brain=detector_brain,
                 device=device)
     demo.run()
 

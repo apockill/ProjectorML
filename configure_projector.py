@@ -30,8 +30,8 @@ if __name__ == "__main__":
                              "Try numbers 0-# monitors, if you don't know.")
     args = parser.parse_args()
 
-    p = Projector(3)
-    c = Camera(0)
+    p = Projector(args.projector_id)
+    c = Camera(1)
 
     factory = SurfaceFactory(c, p)
     print(intro_text)

@@ -21,15 +21,19 @@ class Surface:
     def warp_to_camera(self, projector_frame, new_dimensions):
         """Warps a projector frame such that if projected, it would appear on
         the cameras perspective as unwarped."""
-        empty = np.zeros_like(projector_frame)
-        mask = cv2.fillPoly(empty, [self.cam_points], (255, 255, 255))
+        to_warp = self.mask_frame(projector_frame)
 
-        to_warp = cv2.bitwise_and(projector_frame, mask)
         warped = cv2.warpPerspective(to_warp,
                                      self._to_projector_mat,
                                      new_dimensions)
 
         return warped
+
+    def mask_frame(self, projector_frame):
+        empty = np.zeros_like(projector_frame)
+        mask = cv2.fillPoly(empty, [self.cam_points], (255, 255, 255))
+        masked = cv2.bitwise_and(projector_frame, mask)
+        return masked
 
     @staticmethod
     def _get_affine_warp(from_pts, to_pts):
@@ -72,6 +76,8 @@ This will happen four times, then you will be done creating the surface!
 
 
 class SurfaceFactory:
+    CALIBRATION_COLOR = (255, 255, 255)
+
     def __init__(self, cam, prj):
         self.cam = cam
         self.prj = prj
@@ -98,11 +104,11 @@ class SurfaceFactory:
         cv2.setMouseCallback(win_name, mouse_callback)
 
         while True:
-            img = self.cam.read()
+            _, img = self.cam.read()
             frame = self.prj.empty_frame
             draw_cross(frame,
                        prj_points[len(cam_points)],
-                       (255, 255, 255), 15)
+                       self.CALIBRATION_COLOR, 30)
             cv2.imshow(win_name, img)
             self.prj.render(frame)
             if len(cam_points) == 4:
@@ -116,7 +122,7 @@ class SurfaceFactory:
         curr_proj_point = [None, None]
 
         # Get frame sizes
-        img = self.cam.read()
+        _, img = self.cam.read()
         cam_h, cam_w, _ = img.shape
         prj_h, prj_w, _ = self.prj.empty_frame.shape
 
@@ -128,9 +134,9 @@ class SurfaceFactory:
                 frame = self.prj.empty_frame
                 draw_cross(frame,
                            tuple(curr_proj_point),
-                           (255, 255, 255), 15)
+                           self.CALIBRATION_COLOR, 30)
                 draw_polygon(frame, points + [curr_proj_point],
-                             (255, 255, 255), 6)
+                             self.CALIBRATION_COLOR, 6)
                 self.prj.render(frame)
             if event == cv2.EVENT_LBUTTONDOWN:
                 if curr_proj_point[0] is None: return
@@ -142,7 +148,7 @@ class SurfaceFactory:
         cv2.setMouseCallback(win_name, mouse_callback)
 
         while True:
-            img = self.cam.read()
+            _, img = self.cam.read()
             cv2.imshow(win_name, img)
             cv2.waitKey(1)
             if len(points) == 4:
